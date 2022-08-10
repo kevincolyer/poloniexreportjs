@@ -1,7 +1,7 @@
 'use strict'
 
 const SAVEDATA = false;
-const LOADDATA = false;
+const LOADDATA = true;
 
 // Bring in the ability to create the 'require' method
 import {
@@ -16,6 +16,7 @@ const url = 'https://api.poloniex.com'
 const axios = require('axios')
 const CryptoJS = require('crypto-js')
 const Table = require('cli-table');
+const sendmail = require('sendmail');
 const limit = 20;
 
 const {
@@ -165,6 +166,21 @@ function post(url, path, param = {}) {
         });
 }
 
+
+
+// email - sendmail via localhost
+function sendEmailReport(report) {
+
+sendmail({
+    from: 'kevin@thecolyers.net',
+    to: 'kevin@thecolyers.net ',
+    subject: 'Poloniex Report',
+    text: report,
+  }, function(err, reply) {
+    console.log(err && err.stack);
+    console.dir(reply);
+});
+}
 /*
 function del(url, path, param = {}, apiKey, secretKey) {
     const sign = new Sign('DELETE', path, param, apiKey, secretKey).sign()
@@ -432,15 +448,19 @@ tableOfCoins.sort((a, b) => b[4] - a[4]);
 
 tableOfCoins.push(['', '', '', 'TOTALS', moneydollar(tot_usd), moneybitcoin(tot_btc)]);
 
-// ouput
-console.log("Markets");
-console.log(tableOfMarkets.toString());
-console.log("\n");
-console.log("\n");
-console.log("Orders");
-console.log(tableOfOrders.toString())
-console.log("\n");
-console.log("\n");
-console.log("Balances");
-console.log(tableOfCoins.toString());
+// output
+var report="MARKETS\n";
+report+=tableOfMarkets.toString();
+report+="\n\n\n";
+report+="Orders\n";
+report+=tableOfOrders.toString();
+report+="\n\n\n";
+report+="Balances\n";
+
+report+=tableOfCoins.toString();
+report+="\n";
+
+console.log(report)
 console.log("Load data=", LOADDATA);
+
+sendmail(report);
