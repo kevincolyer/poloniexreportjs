@@ -1,7 +1,7 @@
 'use strict'
 
 const SAVEDATA = false;
-const LOADDATA = true;
+const LOADDATA = false;
 
 // Bring in the ability to create the 'require' method
 import {
