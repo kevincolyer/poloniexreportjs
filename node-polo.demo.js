@@ -1,7 +1,7 @@
 'use strict'
 
 const SAVEDATA = false;
-const LOADDATA = true;
+const LOADDATA = false;
 
 // Bring in the ability to create the 'require' method
 import {
@@ -89,7 +89,7 @@ function getHeader(method, path, param) {
 function get(url, path, param = {}) {
     timestamp = new Date().getTime()
     const headers = getHeader('GET', path, param)
-    console.log(headers);
+    //console.log(headers);
     // return promise
     return axios.get(url + path, {
             params: param,
@@ -129,7 +129,7 @@ function post(url, path, param = {}) {
     timestamp = new Date().getTime()
     const headers = getHeader('POST', path, param)
 
-    console.log(headers);
+    //console.log(headers);
     // return promise
     return axios.post(url + path, {
             params: param,
@@ -186,7 +186,7 @@ function put(url, path, param = {}, apiKey, secretKey) {
 // helper function for number formatting
 function percent(number) {
 
-    return (truncate(number * 10000) / 100).toFixed(2)
+    return (truncate(number * 10000) / 100).toFixed(0);
 }
 
 // helper function for number formatting
@@ -238,7 +238,7 @@ if (!LOADDATA) {
     data = r.response.data;
 }
 const myOrders = LOADDATA ? require('./test-myOrders.json') : data;
-// console.log(myOrders) // Get open orders
+//console.log(myOrders) // Get open orders
 
 
 /*
@@ -274,19 +274,6 @@ console.log(mySmartHistoricalOrders)
 // const myCurrencies = r.response.data;
 // console.log(myCurrencies[0])
 
-/////////////////////////////////////////////
-// get specific market symbol
-// /markets/{symbol}/price
-if (!LOADDATA) {
-    r = await get(url, '/markets/BTC_USDT/price', {})
-    if (r === null) {
-        throw new Error();
-    };
-    data = r.response.data;
-}
-const myBTC_USDT = LOADDATA ? require('./test-myBTC_USDT.json') : data;
-
-//console.log(myBTC_USDT)
 
 /////////////////////////////////////////////
 // get all markets
@@ -299,6 +286,15 @@ if (!LOADDATA) {
     data = r.response.data;
 }
 const marketsPrice = LOADDATA ? require('./test-marketsPrice.json') : data;
+
+// convert array to hash
+var marketsPriceHash = {}
+for (let m of marketsPrice) {
+    marketsPriceHash[m.symbol] = m;
+}
+
+const myBTC_USDT = marketsPriceHash['BTC_USDT'];
+const myBTC_USDTPrice = myBTC_USDT.price;
 
 // sort markets by greatest daily change (desc)
 marketsPrice.sort((a, b) => b.dailyChange - a.dailyChange)
@@ -316,10 +312,6 @@ if (SAVEDATA) {
     jsonfile.writeFile('./test-marketsPrice.json', marketsPrice, function(err) {
         if (err) console.error(err)
     })
-    jsonfile.writeFile('./test-myBTC_USDT.json', myBTC_USDT, function(err) {
-        if (err) console.error(err)
-    })
-
 }
 
 /////////////////////////////////////////////////
@@ -333,23 +325,52 @@ var tableOfMarkets = new Table({
     colAligns: ['left', 'right', 'right']
 });
 
-var i = 0;
-for (let market of marketsPrice) {
+
+var interestingMarkets = new Set();
+interestingMarkets.add("BTC_USDT")
+interestingMarkets.add("ETH_USDT");
+for (const order of myOrders) {
+    interestingMarkets.add(order.symbol);
+}
+
+for (const symbol of interestingMarkets) {
+
+    var market = marketsPriceHash[symbol];
     // table is an Array, so you can `push`, `unshift`, `splice` and friends
-
-    i++;
-    if (i < limit) {
-
-
-        tableOfMarkets.push(
-            [market.symbol, market.price, percent(market.dailyChange)]
-        );
-    }
+    tableOfMarkets.push(
+        [market.symbol, market.price, percent(market.dailyChange)]
+    );
 
 }
 
-console.log(tableOfMarkets.toString());
 
+//////////////////////////////////////////////
+// tableOfOrders
+var tableOfOrders = new Table({
+    head: ['Order', 'Prox %', '24hrs %', 'Type', 'Rate', 'Amount', 'Value'],
+    colWidths: [15, 15, 10, 6, 20, 15, 20],
+    colAligns: ['left', 'right', 'right', 'right', 'right', 'right', 'right']
+});
+
+var total = 0.0;
+
+for (const order of myOrders) {
+    var market = marketsPriceHash[order.symbol];
+    var prox = percent((order.price - market.price) / market.price);
+    var value = order.price * order.quantity; // need to work out what currency this is! Want USDT
+    // btc or in usdt?
+    if (order.symbol.endsWith('BTC')) {
+        value = parseFloat(value) * myBTC_USDTPrice
+    }
+
+    tableOfOrders.push([order.symbol, prox, percent(market.dailyChange), order.side, order.price, order.quantity, moneydollar(value)]);
+    total += parseFloat(value);
+
+}
+
+// sort by prox ascending
+tableOfOrders.sort((a, b) => a[1] - b[1]);
+tableOfOrders.push(['', '', '', '', '', 'TOTAL', moneydollar(total)])
 /////////////////////////////////////////////////
 // tableOfCoins
 // from wallet
@@ -371,8 +392,8 @@ for (let coin of myBalances) {
         hold
     } = coin;
     let total = parseFloat(available) + parseFloat(hold);
-    let val_usd = 0;
-    let val_btc = 0;
+    let val_usd = 0.0;
+    let val_btc = 0.0;
 
     // USDT
     let sym_val_usd = currency + "_USDT";
@@ -402,14 +423,24 @@ for (let coin of myBalances) {
     tableOfCoins.push([currency, available, hold, total, moneydollar(val_usd), moneybitcoin(val_btc)])
 
     // totals
+
     tot_usd += +val_usd;
-    tot_btc += tot_btc + val_btc;
+    tot_btc += +val_btc;
 }
 
 tableOfCoins.sort((a, b) => b[4] - a[4]);
 
 tableOfCoins.push(['', '', '', 'TOTALS', moneydollar(tot_usd), moneybitcoin(tot_btc)]);
 
+// ouput
+console.log("Markets");
+console.log(tableOfMarkets.toString());
+console.log("\n");
+console.log("\n");
+console.log("Orders");
+console.log(tableOfOrders.toString())
+console.log("\n");
+console.log("\n");
+console.log("Balances");
 console.log(tableOfCoins.toString());
-
 console.log("Load data=", LOADDATA);
