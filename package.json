@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "axios": "^0.27.2",
+    "cli-table": "^0.3.11",
+    "crypto-js": "^4.1.1",
+    "jsonfile": "^6.1.0",
+    "poloniex-node-api": "^5.0.2"
+  },
+  "type": "module"
+}
