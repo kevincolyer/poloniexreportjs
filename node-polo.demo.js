@@ -1,6 +1,6 @@
 'use strict'
 
-const SAVEDATA = false;
+const SAVEDATA = true;
 const LOADDATA = false;
 
 // Bring in the ability to create the 'require' method
@@ -246,7 +246,6 @@ const myBalances = LOADDATA ? require('./test-myBalances.json') : data;
 // Get open orders
 if (!LOADDATA) {
     r = await get(url, '/orders', {
-        limit: limit
     })
     if (r === null) {
         exit()
@@ -463,4 +462,4 @@ report+="\n";
 console.log(report)
 console.log("Load data=", LOADDATA);
 
-sendmail(report);
+sendEmailReport(report);
