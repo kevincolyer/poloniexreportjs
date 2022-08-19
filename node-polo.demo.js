@@ -16,12 +16,17 @@ const url = 'https://api.poloniex.com'
 const axios = require('axios')
 const CryptoJS = require('crypto-js')
 const Table = require('cli-table');
-const sendmail = require('sendmail');
+const nodemailer = require('nodemailer');
 const limit = 20;
 
 const {
     apiKey,
-    secretKey
+    secretKey,
+    host,
+    port,
+    user,
+    pass,
+    secure,
 } = require('./auth.json'); // use the require method
 
 // nasty global variable
@@ -170,16 +175,36 @@ function post(url, path, param = {}) {
 
 // email - sendmail via localhost
 function sendEmailReport(report) {
+    let message = {
+        from: 'kevin@thecolyers.net',
+        to: 'kevin@thecolyers.net ',
+        subject: 'Poloniex Report',
+        text: report,
+    };
 
-sendmail({
-    from: 'kevin@thecolyers.net',
-    to: 'kevin@thecolyers.net ',
-    subject: 'Poloniex Report',
-    text: report,
-  }, function(err, reply) {
-    console.log(err && err.stack);
-    console.dir(reply);
-});
+    let transporter = nodemailer.createTransport({
+        host: host,
+        port: port,
+        secure: secure,
+        auth: {
+            user: user,
+            pass: pass,
+        },
+        ignoreTLS: true
+
+    });
+
+
+    transporter.sendMail(message, function(error, success) {
+        if (error) {
+            console.log(error)
+            console.log(transporter);
+        } else {
+            console.log("Sent mail OK\n");
+        }
+    })
+
+
 }
 /*
 function del(url, path, param = {}, apiKey, secretKey) {
@@ -245,8 +270,7 @@ const myBalances = LOADDATA ? require('./test-myBalances.json') : data;
 /////////////////////////////////////////////
 // Get open orders
 if (!LOADDATA) {
-    r = await get(url, '/orders', {
-    })
+    r = await get(url, '/orders', {})
     if (r === null) {
         exit()
     };
@@ -282,13 +306,18 @@ const mySmartHistoricalOrders = r.response.data;
 console.log(mySmartHistoricalOrders)
 */
 
-// // get curencies
-// timestamp = new Date().getTime()
-// r =await get(url, '/currencies', {})
-// if (r===null) { throw new Error();};
-// const myCurrencies = r.response.data;
-// console.log(myCurrencies[0])
-
+// get curencies
+timestamp = new Date().getTime()
+r = await get(url, '/currencies', {})
+if (r === null) {
+    throw new Error();
+};
+// make into a hash
+let myCurrencies = {};
+r.response.data.map((c) => {
+    let k = Object.keys(c)[0];
+    myCurrencies[k] = c[k]
+});
 
 /////////////////////////////////////////////
 // get all markets
@@ -335,7 +364,7 @@ if (SAVEDATA) {
 //
 // instantiate
 var tableOfMarkets = new Table({
-    head: ['Market', 'Price', 'Daily Change %'],
+    head: ['Market', 'Price', 'Changed Daily %'],
     colWidths: [20, 20, 20],
     colAligns: ['left', 'right', 'right']
 });
@@ -433,14 +462,16 @@ for (let coin of myBalances) {
     if (sym_val_btc == "BTC_BTC") {
         val_btc = total
     };
+    if (currency in myCurrencies) {
 
-    // put in table
-    tableOfCoins.push([currency, available, hold, total, moneydollar(val_usd), moneybitcoin(val_btc)])
+        // put in table
+        tableOfCoins.push([currency, available, hold, total, moneydollar(val_usd), moneybitcoin(val_btc)])
 
-    // totals
+        // totals
 
-    tot_usd += +val_usd;
-    tot_btc += +val_btc;
+        tot_usd += +val_usd;
+        tot_btc += +val_btc;
+    }
 }
 
 tableOfCoins.sort((a, b) => b[4] - a[4]);
@@ -448,18 +479,20 @@ tableOfCoins.sort((a, b) => b[4] - a[4]);
 tableOfCoins.push(['', '', '', 'TOTALS', moneydollar(tot_usd), moneybitcoin(tot_btc)]);
 
 // output
-var report="MARKETS\n";
-report+=tableOfMarkets.toString();
-report+="\n\n\n";
-report+="Orders\n";
-report+=tableOfOrders.toString();
-report+="\n\n\n";
-report+="Balances\n";
+var report = "MARKETS\n";
+report += tableOfMarkets.toString();
+report += "\n\n\n";
+report += "Orders\n";
+report += tableOfOrders.toString();
+report += "\n\n\n";
+report += "Balances\n";
 
-report+=tableOfCoins.toString();
-report+="\n";
+report += tableOfCoins.toString();
+report += "\n";
 
 console.log(report)
 console.log("Load data=", LOADDATA);
 
-sendEmailReport(report);
+var textReport = report.replace(
+    /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+sendEmailReport(textReport);
