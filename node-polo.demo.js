@@ -9,7 +9,8 @@ import {
 } from "module";
 
 // construct the require method
-const require = createRequire(import.meta.url);
+const require = createRequire(
+    import.meta.url);
 
 const jsonfile = require('jsonfile')
 const url = 'https://api.poloniex.com'
@@ -173,13 +174,14 @@ function post(url, path, param = {}) {
 
 
 
-// email - sendmail via localhost
+// email - nodemailer via localhost
 function sendEmailReport(report) {
     let message = {
         from: 'kevin@thecolyers.net',
         to: 'kevin@thecolyers.net ',
         subject: 'Poloniex Report',
-        text: report,
+        text: report + "\n",
+        html: "<pre>" + report + "</pre>",
     };
 
     let transporter = nodemailer.createTransport({
@@ -238,7 +240,10 @@ function truncate(number) {
 }
 
 function moneydollar(number) {
-    return (+number).toFixed(2);
+    return (+number).toLocaleString('en-GB', {
+        "minimumFractionDigits": 2,
+        "maximumFractionDigits": 2
+    });
 }
 
 function moneybitcoin(number) {
@@ -479,7 +484,8 @@ tableOfCoins.sort((a, b) => b[4] - a[4]);
 tableOfCoins.push(['', '', '', 'TOTALS', moneydollar(tot_usd), moneybitcoin(tot_btc)]);
 
 // output
-var report = "MARKETS\n";
+var report = "POLONIEX ACTIVITY REPORT " + new Date().toUTCString() + "\n\n";
+report += "MARKETS\n";
 report += tableOfMarkets.toString();
 report += "\n\n\n";
 report += "Orders\n";
