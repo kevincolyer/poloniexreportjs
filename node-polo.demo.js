@@ -397,7 +397,7 @@ for (const symbol of interestingMarkets) {
 // tableOfOrders
 var tableOfOrders = new Table({
     head: ['Order', 'Prox %', '24hrs %', 'Type', 'Rate', 'Amount', 'Value'],
-    colWidths: [15, 15, 10, 6, 20, 15, 20],
+    colWidths: [13, 12, 10, 6, 15, 15, 15],
     colAligns: ['left', 'right', 'right', 'right', 'right', 'right', 'right']
 });
 
@@ -427,7 +427,7 @@ tableOfOrders.push(['', '', '', '', '', 'TOTAL', moneydollar(total)])
 
 var tableOfCoins = new Table({
     head: ['Coin', 'Avail', 'Hold', 'Total', 'Value USD', 'Value BTC'],
-    colWidths: [10, 20, 20, 20, 15, 20],
+    colWidths: [10, 18, 18, 18, 15, 15],
     colAligns: ['left', 'right', 'right', 'right', 'right', 'right']
 });
 
