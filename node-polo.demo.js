@@ -1,8 +1,5 @@
 'use strict'
 
-const SAVEDATA = true;
-const LOADDATA = false;
-
 // Bring in the ability to create the 'require' method
 import {
     createRequire
@@ -29,6 +26,23 @@ const {
     pass,
     secure,
 } = require('./auth.json'); // use the require method
+
+// Program options
+const OPTIONS = {
+    'SAVEDATA': false,
+    'LOADDATA': false,
+    'SENDEMAIL': true
+};
+
+// Process CLI
+const myArgs = process.argv.slice(2);
+if (myArgs.includes('--no-email')) {
+    OPTIONS['SENDEMAIL'] = false
+};
+
+// Set programe option flags
+const LOADDATA = OPTIONS['LOADDATA'];
+const SAVEDATA = OPTIONS['SAVEDATA'];
 
 // nasty global variable
 let timestamp = new Date().getTime()
@@ -479,7 +493,8 @@ for (let coin of myBalances) {
     }
 }
 
-tableOfCoins.sort((a, b) => b[4] - a[4]);
+// sort by column 4 but strip out commas first!
+tableOfCoins.sort((a, b) => +b[4].replaceAll(',', '') - +a[4].replaceAll(',', ''));
 
 tableOfCoins.push(['', '', '', 'TOTALS', moneydollar(tot_usd), moneybitcoin(tot_btc)]);
 
@@ -499,6 +514,10 @@ report += "\n";
 console.log(report)
 console.log("Load data=", LOADDATA);
 
+// regexp to strip console colours
 var textReport = report.replace(
     /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
-sendEmailReport(textReport);
+
+if (OPTIONS['SENDEMAIL']) {
+    sendEmailReport(textReport)
+};
