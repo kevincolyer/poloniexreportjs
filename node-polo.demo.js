@@ -242,8 +242,9 @@ function put(url, path, param = {}, apiKey, secretKey) {
 /////////////////////////////////////////////
 // helper function for number formatting
 function percent(number) {
-
-    return (truncate(number * 10000) / 100).toFixed(0);
+    var val=(truncate(number * 10000) / 100).toFixed(0);
+    if (val>0) {val='+'+val}
+    return val;
 }
 
 // helper function for number formatting
@@ -406,15 +407,15 @@ var tableOfMarkets = new Table({
         'padding-left': 0,
         'padding-right': 0
     },
-    head: ['Market', 'Price', 'Changed Daily %'],
-    colWidths: [20, 20, 20],
-    colAligns: ['left', 'right', 'right']
+    head: ['Market', 'USDTPrice', 'Changed Daily %', 'BTC Price'],
+    colWidths: [12, 12, 16,16],
+    colAligns: ['left', 'right', 'right','right']
 });
 
 
 var interestingMarkets = new Set();
-interestingMarkets.add("BTC_USDT")
-interestingMarkets.add("ETH_USDT");
+//interestingMarkets.add("BTC_USDT")
+//interestingMarkets.add("ETH_USDT");
 for (const order of myOrders) {
     interestingMarkets.add(order.symbol);
 }
@@ -422,12 +423,34 @@ for (const order of myOrders) {
 for (const symbol of interestingMarkets) {
 
     var market = marketsPriceHash[symbol];
+    var priceInBTC;
+   var  priceInUSDT;
+    if (symbol.endsWith('BTC')) {
+	priceInBTC= market.price;
+        priceInUSDT = parseFloat(market.price) * myBTC_USDTPrice
+    } 
+    if (symbol.endsWith('USDT')) {
+	priceInBTC = parseFloat(market.price)/myBTC_USDTPrice;
+	priceInUSDT = market.price;
+}
+
+
     // table is an Array, so you can `push`, `unshift`, `splice` and friends
     tableOfMarkets.push(
-        [market.symbol, market.price, percent(market.dailyChange)]
+        [market.symbol, moneydollar(priceInUSDT), percent(market.dailyChange), moneybitcoin(priceInBTC)]
     );
 
 }
+tableOfMarkets.sort();
+var market=  marketsPriceHash["ETH_USDT"];
+    tableOfMarkets.unshift(  
+        [market.symbol, moneydollar(market.price), percent(market.dailyChange),moneydollar(parseFloat(market.price)/myBTC_USDTPrice)]
+    );
+market=  marketsPriceHash["BTC_USDT"];
+    tableOfMarkets.unshift(  
+        [market.symbol, moneydollar(market.price), percent(market.dailyChange),'n/a']
+    );
+
 
 
 //////////////////////////////////////////////
@@ -455,7 +478,7 @@ var tableOfOrders = new Table({
         'padding-right': 0
     },
     head: ['Order', 'Prox %', '24hrs %', 'Type', 'Rate', 'Amount', 'Value'],
-    colWidths: [13, 12, 10, 6, 15, 15, 15],
+    colWidths: [12, 12, 10, 6, 15, 15, 15],
     colAligns: ['left', 'right', 'right', 'right', 'right', 'right', 'right']
 });
 
@@ -506,7 +529,7 @@ var tableOfCoins = new Table({
         'padding-right': 0
     },
     head: ['Coin', 'Avail', 'Hold', 'Total', 'Value USD', 'Value BTC'],
-    colWidths: [10, 18, 18, 18, 15, 15],
+    colWidths: [12, 18, 18, 18, 15, 15],
     colAligns: ['left', 'right', 'right', 'right', 'right', 'right']
 });
 
