@@ -262,7 +262,10 @@ function moneydollar(number) {
 }
 
 function moneybitcoin(number) {
-    return (+number).toFixed(8);
+    const pattern = /(\d\d\d)(\d\d\d)(\d\d\d)$/;
+    var val= (+number).toFixed(9);
+    val=val.replace(pattern,"$1 $2 $3");
+    return val;
 }
 /////////////////////////////////////////////
 // fetch private data
